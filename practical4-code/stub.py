@@ -34,15 +34,14 @@ class Learner:
         new_tree_dist = max(0, new_tree_dist)
         # new_tree_dist = min(30, new_tree_dist)
 
-        old_monk_bot = old_state['monkey']['bot']
-        new_monk_bot = (old_monk_bot + 40) / 25
-        new_monk_bot = max(0, new_monk_bot)
-        new_monk_bot = min(20, new_monk_bot)
+        old_bot_diff = old_state['tree']['bot'] - old_state['monkey']['bot']
+        new_bot_diff = (old_bot_diff + 300) / 100
+        new_bot_diff = max(0, new_bot_diff)
         
         old_monk_vel = old_state['monkey']['vel']
         new_monk_vel = 0 if old_monk_vel < 0 else 1
 
-        return (new_tree_bot, new_tree_dist, new_monk_bot, new_monk_vel)
+        return (new_tree_bot, new_bot_diff, new_tree_dist, new_monk_vel)
         
         
     def action_callback(self, state):
@@ -77,6 +76,8 @@ class Learner:
         alpha = self.alphas[last_state][last_action]
         self.Q[last_state][last_action] = old_val + (1./alpha)*(last_reward + discount*max(self.Q[cur_state]) - old_val)
         self.alphas[last_state][last_action] += 1.
+
+        print len(self.Q)
 
         # CHOOSE NEW ACTION
         rnd = npr.random()
