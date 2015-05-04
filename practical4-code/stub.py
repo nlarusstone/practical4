@@ -3,6 +3,11 @@ import sys
 
 from SwingyMonkey import SwingyMonkey
 
+Q = [[0 for i in xrange(2)] for j in xrange(10000)]
+alpha = 0.9
+gamma = 0.9
+epsilon = 0.1
+
 class Learner:
 
     def __init__(self):
@@ -14,6 +19,7 @@ class Learner:
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
+
 
     def action_callback(self, state):
         '''Implement this function to learn things and take actions.
@@ -34,10 +40,12 @@ class Learner:
 
     def reward_callback(self, reward):
         '''This gets called so you can see what reward you get.'''
-
+        if reward != 0:
+            print reward
+            print self.last_state
         self.last_reward = reward
 
-iters = 100
+iters = 20
 learner = Learner()
 
 for ii in xrange(iters):
@@ -48,7 +56,7 @@ for ii in xrange(iters):
                          tick_length=1,          # Make game ticks super fast.
                          action_callback=learner.action_callback,
                          reward_callback=learner.reward_callback)
-
+    print Q
     # Loop until you hit something.
     while swing.game_loop():
         pass
