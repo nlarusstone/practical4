@@ -12,8 +12,10 @@ class Learner:
         self.last_action = None
         self.last_reward = None
         self.Q = {}
-        self.epsilon = 0.5
+        self.alphas = {}
+        self.epsilon = 1
         self.score = 0
+        self.states = []
 
     def reset(self):
         self.last_state  = None
@@ -25,48 +27,36 @@ class Learner:
         old_tree_bot = old_state['tree']['bot']
         new_tree_bot = (old_tree_bot - 11) / 20
         new_tree_bot = max(0, new_tree_bot)
-        new_tree_bot = min(6, new_tree_bot)
+        # new_tree_bot = min(6, new_tree_bot)
         
-        old_tree_top = old_state['tree']['top']
-        new_tree_top = (old_tree_top - 211) / 20
-        new_tree_top = max(0, new_tree_top)
-        new_tree_top = min(6, new_tree_top)
-
         old_tree_dist = old_state['tree']['dist']
-        new_tree_dist = (old_tree_dist + 115) / 20
-        new_tree_dist = max(0, new_tree_top)
-        new_tree_dist = min(30, new_tree_dist)
+        new_tree_dist = (old_tree_dist + 115) / 100
+        new_tree_dist = max(0, new_tree_dist)
+        # new_tree_dist = min(30, new_tree_dist)
 
         old_monk_bot = old_state['monkey']['bot']
-        new_monk_bot = (old_monk_bot + 40) / 20
+        new_monk_bot = (old_monk_bot + 40) / 25
         new_monk_bot = max(0, new_monk_bot)
         new_monk_bot = min(20, new_monk_bot)
         
-        old_monk_top = old_state['monkey']['top']
-        new_monk_top = (old_monk_top - 16) / 20
-        new_monk_top = max(0, new_monk_top)
-        new_monk_top = min(20, new_monk_top)
-
         old_monk_vel = old_state['monkey']['vel']
-        new_monk_vel = (old_monk_vel + 44) / 5
-        new_monk_vel = max(0, new_monk_vel)
-        new_monk_vel = min(13, new_monk_vel)
+        new_monk_vel = 0 if old_monk_vel < 0 else 1
 
-        return (new_tree_bot, new_tree_top, new_tree_dist, new_monk_bot, new_monk_top, new_monk_vel)
+        return (new_tree_bot, new_tree_dist, new_monk_bot, new_monk_vel)
         
         
     def action_callback(self, state):
         '''Implement this function to learn things and take actions.
         Return 0 if you don't want to jump and 1 if you do.'''
+        
+        self.states.append(state)
 
         if self.last_state is None:
             self.last_state = state
             self.last_action = 0
             return 0
 
-        discount = 0.9
-        learn_rate = 0.6
-        epsilon = self.epsilon
+        discount = 0.1
 
         # self.states.append(state)
 
@@ -77,22 +67,24 @@ class Learner:
         last_reward = self.last_reward
         
         if last_state not in self.Q:
-            self.Q[last_state] = [0.01, 0.]
+            self.Q[last_state] = [0., 0.]
+            self.alphas[last_state] = [1., 1.]
         if cur_state not in self.Q:
-            self.Q[cur_state] = [0.01, 0.]
+            self.Q[cur_state] = [0., 0.]
+            self.alphas[cur_state] = [1., 1.]
 
         old_val = self.Q[last_state][last_action]
-        self.Q[last_state][last_action] = old_val + learn_rate*(last_reward + discount*max(self.Q[cur_state]) - old_val)
+        alpha = self.alphas[last_state][last_action]
+        self.Q[last_state][last_action] = old_val + (1./alpha)*(last_reward + discount*max(self.Q[cur_state]) - old_val)
+        self.alphas[last_state][last_action] += 1.
 
-        print self.Q
-        
         # CHOOSE NEW ACTION
         rnd = npr.random()
 
-        if rnd > epsilon:
+        if rnd > self.epsilon:
             # choose optimal action
             action_vals = self.Q[cur_state]
-            new_action = 0 if action_vals[0] > action_vals[1] else 1
+            new_action = 0 if action_vals[0] >= action_vals[1] else 1
         else:
             new_action = npr.random_integers(0, 1)
 
@@ -107,11 +99,13 @@ class Learner:
 
         self.last_reward = reward
 
-iters = 100
+iters = 50
 learner = Learner()
 scores = []
 
 for ii in xrange(iters):
+
+    learner.epsilon = 1./(ii+1)
 
     # Make a new monkey object.
     swing = SwingyMonkey(sound=False,            # Don't play sounds.
@@ -122,8 +116,6 @@ for ii in xrange(iters):
 
     # Loop until you hit something.
     while swing.game_loop():
-        learner.epsilon -= 1./200
-        learner.epsilon = max(0, learner.epsilon)
         pass
     
     scores.append(learner.score)
@@ -131,4 +123,22 @@ for ii in xrange(iters):
     # Reset the state of the learner.
     learner.reset()
 
-print scores
+print len(learner.Q.keys())
+
+tree_bots = [x['tree']['bot'] for x in learner.states]
+diffs = [x['tree']['bot'] - x['monkey']['bot'] for x in learner.states]
+vels = [x['monkey']['vel'] for x in learner.states]
+dists = [x['tree']['dist'] for x in learner.states]
+
+print 'tree bots'
+print min(tree_bots)
+print max(tree_bots)
+print 'diffs'
+print min(diffs)
+print max(diffs)
+print 'vels'
+print min(vels)
+print max(vels)
+print 'dists'
+print min(dists)
+print max(dists)
