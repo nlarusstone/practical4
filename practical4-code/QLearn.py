@@ -28,8 +28,12 @@ class Learner:
         self.score = 0
 
     def disc_state(self, old_state):
+        old_monk_bot = old_state['monkey']['bot']
+        new_monk_bot = (old_monk_bot + 11) / 80
+        new_monk_bot = max(0, new_monk_bot)
+
         old_bot_diff = old_state['tree']['bot'] - old_state['monkey']['bot']
-        new_bot_diff = (old_bot_diff + 333) / 100
+        new_bot_diff = (old_bot_diff + 333) / 80
         new_bot_diff = max(0, new_bot_diff)
         
         old_tree_dist = old_state['tree']['dist']
@@ -40,7 +44,8 @@ class Learner:
         new_monk_vel = (old_monk_vel + 40) / 20
         new_monk_vel = max(0, new_monk_vel)
 
-        return (new_bot_diff, new_tree_dist, new_monk_vel)
+        return (new_monk_bot, new_bot_diff, new_tree_dist, new_monk_vel)
+        # return (new_bot_diff, new_tree_dist, new_monk_vel)
         
         
     def action_callback(self, state):
@@ -56,8 +61,6 @@ class Learner:
             return 0
 
         discount = 0.9
-
-        # self.states.append(state)
 
         # UPDATE Q
         last_state = self.disc_state(self.last_state)
@@ -86,9 +89,8 @@ class Learner:
             action_vals = self.Q[cur_state]
             new_action = 0 if action_vals[0] >= action_vals[1] else 1
         else:
-            # act randomly, 0.7 prob of holding, 0.3 prob of jumping
-            rnd  = npr.random()
-            new_action = 0 if rnd < 0.7 else 1
+            # act randomly
+            new_action = npr.randint(0, 1)
 
         self.last_action = new_action
         self.last_state  = state
@@ -124,8 +126,8 @@ for ii in xrange(iters):
     # Reset the state of the learner.
     learner.reset()
 
-
 tree_bots = [x['tree']['bot'] for x in learner.raw_states]
+monk_bots = [x['tree']['bot'] for x in learner.raw_states]
 diffs = [x['tree']['bot'] - x['monkey']['bot'] for x in learner.raw_states]
 vels = [x['monkey']['vel'] for x in learner.raw_states]
 dists = [x['tree']['dist'] for x in learner.raw_states]
@@ -133,28 +135,33 @@ dists = [x['tree']['dist'] for x in learner.raw_states]
 state0 = [x[0] for x in learner.disc_states]
 state1 = [x[1] for x in learner.disc_states]
 state2 = [x[2] for x in learner.disc_states]
+state3 = [x[3] for x in learner.disc_states]
 
-# plt.hist(state0)
-# plt.show()
-# plt.hist(state1)
-# plt.show()
-# plt.hist(state2)
-# plt.show()
+plt.hist(state0)
+plt.show()
+plt.hist(state1)
+plt.show()
+plt.hist(state2)
+plt.show()
+plt.hist(state3)
+plt.show()
 
-# print 'tree bots'
-# print min(tree_bots)
-# print max(tree_bots)
+# print 'monk_bots'
+# print min(monk_bots)
+# print max(monk_bots)
 # print 'diffs'
 # print min(diffs)
 # print max(diffs)
 # print 'vels'
+# plt.hist(vels)
+# plt.show()
 # print min(vels)
 # print max(vels)
 # print 'dists'
 # print min(dists)
 # print max(dists)
 
-def moving_average(a, n=10):
+def moving_average(a, n=15):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
