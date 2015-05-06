@@ -105,8 +105,9 @@ class Learner:
             action_vals = self.Q[cur_state]
             new_action = 0 if action_vals[0] >= action_vals[1] else 1
         else:
-            # act randomly
-            new_action = npr.randint(0, 1)
+            # act randomly (0.7 prob of holding on, 0.3 prob of jumping)
+            rnd = npr.random()
+            new_action = 0 if rnd < 0.7 else 1
 
         self.last_action = new_action
         self.last_state  = state
