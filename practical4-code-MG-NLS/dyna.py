@@ -4,12 +4,13 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
+import sys
 
 from SwingyMonkey import SwingyMonkey
 
 class Learner:
 
-    def __init__(self):
+    def __init__(self, discount, K):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
@@ -18,6 +19,8 @@ class Learner:
         self.S = set()
         self.NSA = Counter()
         self.NSAS = Counter()
+        self.discount = discount
+        self.K = K
         self.alphas = {}
         self.epsilon = 1
         self.score = 0
@@ -32,11 +35,11 @@ class Learner:
 
     def disc_state(self, old_state):
         old_bot_diff = old_state['tree']['bot'] - old_state['monkey']['bot']
-        new_bot_diff = (old_bot_diff + 333) / 70
+        new_bot_diff = (old_bot_diff + 333) / 100
         new_bot_diff = max(0, new_bot_diff)
         
         old_tree_dist = old_state['tree']['dist']
-        new_tree_dist = (old_tree_dist + 115) / 80
+        new_tree_dist = (old_tree_dist + 115) / 120
         new_tree_dist = max(0, new_tree_dist)
 
         old_monk_vel = old_state['monkey']['vel']
@@ -58,7 +61,7 @@ class Learner:
             self.last_action = 0
             return 0
 
-        discount = 0.9
+        discount = 0.55
 
         # UPDATE Q
         last_state = self.disc_state(self.last_state)
@@ -86,7 +89,7 @@ class Learner:
         self.NSAS[(last_state, last_action, cur_state)] += 1
         
         # DYNA-Q
-        idx = npr.choice(len(self.NSA.keys()), 100)
+        idx = npr.choice(len(self.NSA.keys()), self.K)
         sa_pairs = np.array(self.NSA.keys())[idx]
         for sa in sa_pairs:
             sa = tuple(sa)
@@ -120,8 +123,13 @@ class Learner:
 
         self.last_reward = reward
 
-iters = 100
-learner = Learner()
+if len(sys.argv) != 4:
+    print 'Usage: python dyna.py numIters discountRate K'
+    sys.exit(0)
+iters = int(sys.argv[1])
+discount = float(sys.argv[2])
+K = int(sys.argv[3])
+learner = Learner(discount, K)
 scores = []
 
 for ii in xrange(iters):
@@ -144,38 +152,7 @@ for ii in xrange(iters):
     # Reset the state of the learner.
     learner.reset()
 
-monk_bots = [x['tree']['bot'] for x in learner.raw_states]
-diffs = [x['tree']['bot'] - x['monkey']['bot'] for x in learner.raw_states]
-vels = [x['monkey']['vel'] for x in learner.raw_states]
-dists = [x['tree']['dist'] for x in learner.raw_states]
-
-state0 = [x[0] for x in learner.disc_states]
-state1 = [x[1] for x in learner.disc_states]
-state2 = [x[2] for x in learner.disc_states]
-
-plt.hist(state0)
-plt.show()
-plt.hist(state1)
-plt.show()
-plt.hist(state2)
-plt.show()
-
-# print 'monk_bots'
-# print min(monk_bots)
-# print max(monk_bots)
-# print 'diffs'
-# print min(diffs)
-# print max(diffs)
-# print 'vels'
-# plt.hist(vels)
-# plt.show()
-# print min(vels)
-# print max(vels)
-# print 'dists'
-# print min(dists)
-# print max(dists)
-
-def moving_average(a, n=15):
+def moving_average(a, n=10):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
     return ret[n - 1:] / n
@@ -186,4 +163,6 @@ plt.plot(moving_average(scores))
 plt.show()
 plt.hist(scores)
 plt.show()
+print np.median(scores)
+print np.mean(scores)
 print max(scores)

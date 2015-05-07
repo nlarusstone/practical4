@@ -1,0 +1,27 @@
+Practical 4 - SwingyMonkey
+by Matt Goldberg and Nicholas Larus-Stone
+
+-------------------------------------------------
+
+Files:
+README    -- YOU ARE HERE
+QLearn.py -- implements vanilla Q-Learning
+dyna.py   -- implements the Dyna-Q hybrid approach
+
+-------------------------------------------------
+
+Usage for QLearn.py:
+python QLearn.py numIters discountRate
+
+Example to run Q-Learning with 200 iterations with a 0.7 discount rate:
+python QLearn.py 200 0.7
+
+-------------------------------------------------
+
+Usage for dyna.py:
+python dyna.py numIters discountRate K
+
+where K is the additional hyperparameter for Dyna-Q (see writeup).
+
+Example to run Dyna-Q with 500 iterations and a 0.6 discount rate, and K = 25:
+python dyna.py 500 0.6 25

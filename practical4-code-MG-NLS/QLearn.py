@@ -3,21 +3,21 @@ import sys
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+import sys
 
 from SwingyMonkey import SwingyMonkey
 
-
 class Learner:
 
-    def __init__(self):
+    def __init__(self, discount):
         self.last_state  = None
         self.last_action = None
         self.last_reward = None
         self.Q = {}
         self.alphas = {}
-        self.epsilon = 1
+        self.epsilon = None # will be modified by loop
         self.score = 0
+        self.discount = discount
         self.raw_states = []
         self.disc_states = []
 
@@ -55,9 +55,7 @@ class Learner:
             self.last_action = 0
             return 0
 
-        discount = 0.9
-
-        # self.states.append(state)
+        discount = self.discount
 
         # UPDATE Q
         last_state = self.disc_state(self.last_state)
@@ -75,7 +73,6 @@ class Learner:
         old_val = self.Q[last_state][last_action]
         alpha = self.alphas[last_state][last_action]
         self.Q[last_state][last_action] = old_val + (1./alpha)*(last_reward + discount*max(self.Q[cur_state]) - old_val)
-
         self.alphas[last_state][last_action] += 1.
         
         # CHOOSE NEW ACTION
@@ -100,14 +97,19 @@ class Learner:
         '''This gets called so you can see what reward you get.'''
         self.last_reward = reward
 
-iters = 200
-learner = Learner()
+
+if len(sys.argv) != 3:
+    print 'Usage: python QLearn.py numIters discountRate'
+    sys.exit(0)
+
+iters = int(sys.argv[1])
+discount = float(sys.argv[2])
+learner = Learner(discount)
 scores = []
 
 for ii in xrange(iters):
 
     learner.epsilon = 1./(ii+1)
-    #learner.epsilon = 1./math.exp(-ii/50)
 
     # Make a new monkey object.
     swing = SwingyMonkey(sound=False,            # Don't play sounds.
@@ -124,36 +126,6 @@ for ii in xrange(iters):
     # Reset the state of the learner.
     learner.reset()
 
-
-tree_bots = [x['tree']['bot'] for x in learner.raw_states]
-diffs = [x['tree']['bot'] - x['monkey']['bot'] for x in learner.raw_states]
-vels = [x['monkey']['vel'] for x in learner.raw_states]
-dists = [x['tree']['dist'] for x in learner.raw_states]
-
-state0 = [x[0] for x in learner.disc_states]
-state1 = [x[1] for x in learner.disc_states]
-state2 = [x[2] for x in learner.disc_states]
-
-# plt.hist(state0)
-# plt.show()
-# plt.hist(state1)
-# plt.show()
-# plt.hist(state2)
-# plt.show()
-
-# print 'tree bots'
-# print min(tree_bots)
-# print max(tree_bots)
-# print 'diffs'
-# print min(diffs)
-# print max(diffs)
-# print 'vels'
-# print min(vels)
-# print max(vels)
-# print 'dists'
-# print min(dists)
-# print max(dists)
-
 def moving_average(a, n=10):
     ret = np.cumsum(a, dtype=float)
     ret[n:] = ret[n:] - ret[:-n]
@@ -165,4 +137,6 @@ plt.plot(moving_average(scores))
 plt.show()
 plt.hist(scores)
 plt.show()
+print np.median(scores)
+print np.mean(scores)
 print max(scores)
